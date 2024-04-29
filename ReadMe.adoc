@@ -61,4 +61,5 @@ Add the bill of the materials you need for this project.
 |3W 465 nm LED         | 4
 |3W 630 nm LED         | 4
 |3W 730 nm LED         | 4
+|12 V 60 W DC source   | 1
 |===

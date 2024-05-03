@@ -9,7 +9,6 @@ const char SSID[]               = SECRET_SSID;    // Network SSID (name)
 const char PASS[]               = SECRET_OPTIONAL_PASS;    // Network password (use for WPA, or use as key for WEP)
 const char DEVICE_KEY[]  = SECRET_DEVICE_KEY;    // Secret device password
 
-void onLightingChange();
 void onLightSwitchChange();
 void onWaterSwitchChange();
 
@@ -34,7 +33,7 @@ void initProperties(){
   ArduinoCloud.addProperty(moist_0, READ, 60 * SECONDS, NULL);
   ArduinoCloud.addProperty(moist_1, READ, 60 * SECONDS, NULL);
   ArduinoCloud.addProperty(moist_2, READ, 60 * SECONDS, NULL);
-  ArduinoCloud.addProperty(lighting, READWRITE, ON_CHANGE, onLightingChange);
+  ArduinoCloud.addProperty(lighting, READ, ON_CHANGE, NULL);
   ArduinoCloud.addProperty(lightSwitch, READWRITE, ON_CHANGE, onLightSwitchChange);
   ArduinoCloud.addProperty(watering, READ, ON_CHANGE, NULL);
   ArduinoCloud.addProperty(waterSwitch, READWRITE, ON_CHANGE, onWaterSwitchChange);

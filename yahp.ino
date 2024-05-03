@@ -1,4 +1,3 @@
-#include "arduino_secrets.h"
 /* 
   Yet Another Hydroponics Project (YAHP)
   
@@ -42,10 +41,15 @@ RTC_DS3231 rtc;  // real time clock
 float moist_mean = 0.0;  // average moisture
 
 DateTime now;  // RTC now
+int* yearPeriod;  // sunrise and set time (array - shape[4])
 float light_intensity = 0.0;  // intensity of the light entering the photorestor
 float day_intensity = 0.0;  // intensity connected to the moment of the day
-float overall_intensity = 0.0;  // multiplicative factor of the light intensity
 int day_minutes = 0;  // minutes of light in the day
+
+bool button = LOW;  // current state of the button
+bool buttonReading = LOW;  // current button reading
+bool buttonLastState = LOW;  // last state of the button
+int buttonDebounce = 0;  // last debouncing timer
 
 int wait = 0;  // wait interval
 
@@ -78,7 +82,7 @@ void setup() {
   Serial.print("    Initializing YAHP    \n");
   Serial.print("                         \n");
   Serial.print("    auth: thesfinox      \n");
-  Serial.print("    ver:  1.0.0          \n");
+  Serial.print("    ver:  1.2.0          \n");
   Serial.print("*************************\n\n");
 
   // Init the RTC
@@ -107,7 +111,8 @@ void setup() {
 
   // Set the builtin led to output
   pinMode(WATERPIN, OUTPUT);
-  pinMode(LIGHTPIN, OUTPUT);
+  pinMode(LIGHTPIN_0, OUTPUT);
+  pinMode(LIGHTPIN_1, OUTPUT);
   pinMode(BUTTONPIN, INPUT);
   pinMode(MOIST_0, INPUT);
   pinMode(MOIST_1, INPUT);
@@ -119,7 +124,7 @@ void setup() {
   // Determine night and day boundaries
   // See: https://www.worlddata.info/europe/france/sunset.php
   now = rtc.now();
-  int* yearPeriod = onYearPeriod(now.month());
+  yearPeriod = onYearPeriod(now.month());
   SUNRISE_HOUR = yearPeriod[0];
   SUNRISE_MINUTE = yearPeriod[1];
   SUNSET_HOUR = yearPeriod[2];
@@ -146,8 +151,15 @@ void setup() {
   watering = false;
   waterSwitch = true;
 
-  // Init the switch
+  // Init the lights
+  lighting = false;
   lightSwitch = true;
+
+  // Run tests
+  Serial.println("Launching tests...");
+  testPin(LIGHTPIN_0);
+  testPin(LIGHTPIN_1);
+  testPin(WATERPIN);
   
   delay(3000);
 }
@@ -160,6 +172,12 @@ void loop() {
 
     // Read RTC
     now = rtc.now();
+    yearPeriod = onYearPeriod(now.month());
+    SUNRISE_HOUR = yearPeriod[0];
+    SUNRISE_MINUTE = yearPeriod[1];
+    SUNSET_HOUR = yearPeriod[2];
+    SUNSET_MINUTE = yearPeriod[3];
+    day_minutes = (SUNSET_HOUR*60 + SUNSET_MINUTE) - (SUNRISE_HOUR*60 + SUNRISE_MINUTE);
     Serial.print("Time: ");
     Serial.print(now.hour(), DEC);
     Serial.print(':');
@@ -188,8 +206,7 @@ void loop() {
 
     Serial.print(" - ");
 
-    luminosity = 4095 - analogRead(PHOTOPIN);
-    luminosity = map(luminosity, 0, 4095, 0, 100);
+    luminosity = map(4095 - analogRead(PHOTOPIN), 0, 4095, 0, 100);
     Serial.print("Light: ");
     Serial.print(luminosity);
     Serial.print("%");
@@ -199,12 +216,6 @@ void loop() {
     light_intensity = onLightChange(luminosity, PHOTO_THRESH_DARK, PHOTO_THRESH_LIGHT);
     Serial.print("Intensity: ");
     Serial.print(light_intensity);
-
-    Serial.print(" - ");
-
-    overall_intensity = day_intensity * light_intensity;
-    Serial.print("Overall int.: ");
-    Serial.print(overall_intensity);
 
     Serial.print(" - ");
     
@@ -234,52 +245,26 @@ void loop() {
 
   // Irrigation actions
   moist_mean = (moist_0 + moist_1 + moist_2) / 3.0;
-  if (waterSwitch)
-  {
-    if (moist_mean < MOIST_THRESH_DRY)
-    {
-      watering = true;
-    } else if (moist_mean >= MOIST_THRESH_WET)
-    {
-      watering = false;
-    } else
-    {
-      watering = true;
-    }
-    if (digitalRead(BUTTONPIN)) {watering = true;}
-    watering ? digitalWrite(WATERPIN, HIGH) : digitalWrite(WATERPIN, LOW);
-  } else
-  {
-    watering = false;
-    digitalWrite(WATERPIN, LOW);
-  }
+  buttonReading = digitalRead(BUTTONPIN);
+  debounceValue(buttonReading, button, buttonLastState, buttonDebounce);  // debounce the button
+  switchConditionLogic(waterSwitch, day_intensity, moist_mean, MOIST_THRESH_DRY, MOIST_THRESH_WET, watering, button);  // decide what to do
+  activatePin(watering, WATERPIN);  // finally, activate, if needed
+  buttonLastState = buttonReading;
 
   // Lighting actions
-  if (lightSwitch)
-  {
-    (overall_intensity > 0.5) ? lighting = true : lighting = false;
-    lighting ? digitalWrite(LIGHTPIN, HIGH) : digitalWrite(LIGHTPIN, LOW);
-  } else
-  {
-    lighting = false;
-    digitalWrite(LIGHTPIN, LOW);
-  }
+  switchConditionLogic(lightSwitch, day_intensity, light_intensity, INTENSITY_THRESHOLD_LOW, INTENSITY_THRESHOLD_HIGH, lighting);  // decide what to do
+  activatePin(lighting, LIGHTPIN_0, LIGHTPIN_1);  // finally, activate, if needed
 }
 
 
-/*
-  Since LightSlider is READ_WRITE variable, onLightSliderChange() is
-  executed every time a new value is received from IoT Cloud.
-*/
-void onLightSliderChange()  {
-  // Add your code here to act upon LightSlider change
-}
 /*
   Since WaterSwitch is READ_WRITE variable, onWaterSwitchChange() is
   executed every time a new value is received from IoT Cloud.
 */
-void onWaterSwitchChange()  {
-  // Add your code here to act upon WaterSwitch change
+void onWaterSwitchChange()
+{
+  digitalWrite(WATERPIN, !digitalRead(WATERPIN));
+  delay(3000);
 }
 
 
@@ -287,14 +272,9 @@ void onWaterSwitchChange()  {
   Since LightSwitch is READ_WRITE variable, onLightSwitchChange() is
   executed every time a new value is received from IoT Cloud.
 */
-void onLightSwitchChange()  {
-  // Add your code here to act upon LightSwitch change
-}
-
-/*
-  Since Lighting is READ_WRITE variable, onLightingChange() is
-  executed every time a new value is received from IoT Cloud.
-*/
-void onLightingChange()  {
-  // Add your code here to act upon Lighting change
+void onLightSwitchChange()
+{
+  digitalWrite(LIGHTPIN_0, !digitalRead(LIGHTPIN_0));
+  digitalWrite(LIGHTPIN_1, !digitalRead(LIGHTPIN_1));
+  delay(3000);
 }

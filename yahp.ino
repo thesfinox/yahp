@@ -82,7 +82,7 @@ void setup() {
   Serial.print("    Initializing YAHP    \n");
   Serial.print("                         \n");
   Serial.print("    auth: thesfinox      \n");
-  Serial.print("    ver:  1.2.0          \n");
+  Serial.print("    ver:  1.2.1          \n");
   Serial.print("*************************\n\n");
 
   // Init the RTC
@@ -212,12 +212,6 @@ void loop() {
     Serial.print("%");
 
     Serial.print(" - ");
-
-    light_intensity = onLightChange(luminosity, PHOTO_THRESH_DARK, PHOTO_THRESH_LIGHT);
-    Serial.print("Intensity: ");
-    Serial.print(light_intensity);
-
-    Serial.print(" - ");
     
     Serial.print("Out int.: ");
     Serial.print(lighting);
@@ -252,7 +246,7 @@ void loop() {
   buttonLastState = buttonReading;
 
   // Lighting actions
-  switchConditionLogic(lightSwitch, day_intensity, light_intensity, INTENSITY_THRESHOLD_LOW, INTENSITY_THRESHOLD_HIGH, lighting);  // decide what to do
+  switchConditionLogic(lightSwitch, day_intensity, (float)luminosity, INTENSITY_THRESHOLD_LOW, INTENSITY_THRESHOLD_HIGH, lighting);  // decide what to do
   activatePin(lighting, LIGHTPIN_0, LIGHTPIN_1);  // finally, activate, if needed
 }
 

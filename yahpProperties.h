@@ -22,8 +22,8 @@ const int PHOTO_THRESH_LIGHT = 60;  // day value of the photoresistor (%)
 
 const int LIGHTPIN_0 = 16;  // light switch
 const int LIGHTPIN_1 = 27;  // light switch
-const float INTENSITY_THRESHOLD_LOW = 0.25;  // overall intensity threshold for lights
-const float INTENSITY_THRESHOLD_HIGH = 0.50;  // overall intensity threshold for lights
+const float INTENSITY_THRESHOLD_LOW = 25;  // overall intensity threshold for lights
+const float INTENSITY_THRESHOLD_HIGH = 50;  // overall intensity threshold for lights
 const int DAY_DESCENT = 60;  // length of light rise and fall (minutes)
 
 const int WATERPIN = 0;  // pin of the water fountain

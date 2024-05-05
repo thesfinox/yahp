@@ -27,6 +27,8 @@ The circuit can be assembled as in the figure:
 
 image::yahp.png[YAHP]
 
+**N.B.**: in the v2, the hardware button has been removed completely from the sketch (IoT buttons are used).
+
 === Folder structure
 
 ....

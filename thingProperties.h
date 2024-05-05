@@ -22,10 +22,12 @@ CloudSwitch watering;
 CloudSwitch waterSwitch;
 CloudTemperatureSensor temperature;
 CloudLuminousIntensity luminosity;
+CloudPercentage day_intensity;
 CloudRelativeHumidity humidity;
 CloudRelativeHumidity moist_0;
 CloudRelativeHumidity moist_1;
 CloudRelativeHumidity moist_2;
+CloudRelativeHumidity moisture;
 
 void initProperties(){
 
@@ -39,10 +41,12 @@ void initProperties(){
   ArduinoCloud.addProperty(waterSwitch, READWRITE, ON_CHANGE, onWaterSwitchChange);
   ArduinoCloud.addProperty(temperature, READ, 60 * SECONDS, NULL);
   ArduinoCloud.addProperty(luminosity, READ, 60 * SECONDS, NULL);
+  ArduinoCloud.addProperty(day_intensity, READ, 60 * SECONDS, NULL);
   ArduinoCloud.addProperty(humidity, READ, 60 * SECONDS, NULL);
   ArduinoCloud.addProperty(moist_0, READ, 60 * SECONDS, NULL);
   ArduinoCloud.addProperty(moist_1, READ, 60 * SECONDS, NULL);
   ArduinoCloud.addProperty(moist_2, READ, 60 * SECONDS, NULL);
+  ArduinoCloud.addProperty(moisture, READ, 60 * SECONDS, NULL);
 
 }
 

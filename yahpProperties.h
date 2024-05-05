@@ -32,7 +32,6 @@ const int MOIST_THRESH_DRY = 40;  // threshold for watering (%)
 const int MOIST_THRESH_WET = 50;  // threshold for watering (%)
 
 const int WAIT_THRESH = 10*1000;  // serial console and sensor update waiting time (ms)
-const int DEBOUNCING = 50;  // debouncing diff time (ms)
 
 // Functions
 void testPin(int pin)  // test a particular pin by making it blink
@@ -171,16 +170,16 @@ float onDayPeriod(DateTime now,
     return 0.0;
   }
 
-  // Linear interpolation (rise to 1 in X minutes, set to 0 in 60 minutes)
+  // Linear interpolation (rise to 100 in X minutes, set to 0 in 60 minutes)
   if (diff_minutes < descent)
   {
-    return diff_minutes / (float)descent;
+    return 100.0 * diff_minutes / (float)descent;
   } else if (diff_minutes >= descent && diff_minutes < day_duration - descent)
   {
-    return 1.0;
+    return 100.0;
   } else
   {
-    return 1.0 - (diff_minutes - (day_duration - descent)) / (float)descent;
+    return 100.0 * (1.0 - (diff_minutes - (day_duration - descent)) / (float)descent);
   }
 }
 
@@ -233,10 +232,13 @@ bool switchConditionLogic(bool switchCondition,
       {
         logic = false;
       }
-    }
-    if (forced)  // ...light it if a "button" is on
+      if (forced)  // ...light it if a "button" is on
+      {
+        logic = true;
+      }
+    } else
     {
-      logic = true;
+      logic = false;
     }
   } else
   {

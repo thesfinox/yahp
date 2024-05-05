@@ -18,10 +18,12 @@
   CloudSwitch waterSwitch;
   CloudTemperatureSensor temperature;
   CloudLuminousIntensity luminosity;
+  CloudPercentage day_intensity;
   CloudRelativeHumidity humidity;
   CloudRelativeHumidity moist_0;
   CloudRelativeHumidity moist_1;
   CloudRelativeHumidity moist_2;
+  CloudRelativeHumidity moisture;
 
   Variables which are marked as READ/WRITE in the Cloud Thing will also have functions
   which are called when their values are changed from the Dashboard.
@@ -40,7 +42,6 @@ int SUNSET_MINUTE = 0;  // minute of sunset
 DHT dht(DHTPIN, DHTTYPE);  // humidity sensor
 RTC_DS3231 rtc;  // real time clock
 
-float moisture = 0.0; // actual value of the moisture
 float moistureState = 0.0;  // average moisture
 float moistureLastState = 0.0;  // last average moisture
 
@@ -49,8 +50,6 @@ float luminosityLastState = 0.0;  // last luminosity
 
 DateTime now;  // RTC now
 int* yearPeriod;  // sunrise and set time (array - shape[4])
-float light_intensity = 0.0;  // intensity of the light entering the photorestor
-float day_intensity = 0.0;  // intensity connected to the moment of the day
 int day_minutes = 0;  // minutes of light in the day
 
 int wait = 0;  // wait interval
@@ -84,7 +83,7 @@ void setup() {
   Serial.print("    Initializing YAHP    \n");
   Serial.print("                         \n");
   Serial.print("    auth: thesfinox      \n");
-  Serial.print("    ver:  2.0.0          \n");
+  Serial.print("    ver:  2.1.0          \n");
   Serial.print("*************************\n\n");
 
   // Init the RTC
@@ -189,7 +188,7 @@ void loop() {
     Serial.print(" - ");
 
     day_intensity = onDayPeriod(now, day_minutes, DAY_DESCENT, SUNRISE_HOUR, SUNRISE_MINUTE, SUNSET_HOUR, SUNSET_MINUTE);
-    // day_intensity = 1.0;  // DEBUG
+    // day_intensity = 100.0;  // DEBUG
     Serial.print("Day int.: ");
     Serial.print(day_intensity);
 

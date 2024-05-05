@@ -17,13 +17,11 @@ const int DHTPIN = 33;  // humidity sensor data pin
 const int DHTTYPE = DHT22;  // type of humidity sensor
 
 const int PHOTOPIN = 32;  // photoresistor pin
-const int PHOTO_THRESH_DARK = 15;  // night value of the photoresistor (%)
-const int PHOTO_THRESH_LIGHT = 60;  // day value of the photoresistor (%)
 
 const int LIGHTPIN_0 = 16;  // light switch
 const int LIGHTPIN_1 = 27;  // light switch
-const float INTENSITY_THRESHOLD_LOW = 25;  // overall intensity threshold for lights
-const float INTENSITY_THRESHOLD_HIGH = 50;  // overall intensity threshold for lights
+const float INTENSITY_THRESHOLD_LOW = 7;  // overall intensity threshold for lights
+const float INTENSITY_THRESHOLD_HIGH = 40;  // overall intensity threshold for lights
 const int DAY_DESCENT = 60;  // length of light rise and fall (minutes)
 
 const int WATERPIN = 0;  // pin of the water fountain
@@ -33,29 +31,27 @@ const int MOIST_2 = 39;  // pins of the moisture sensor
 const int MOIST_THRESH_DRY = 40;  // threshold for watering (%)
 const int MOIST_THRESH_WET = 50;  // threshold for watering (%)
 
-const int BUTTONPIN = 4;  // pin of the physical button
-
 const int WAIT_THRESH = 10*1000;  // serial console and sensor update waiting time (ms)
 const int DEBOUNCING = 50;  // debouncing diff time (ms)
 
 // Functions
-float onLightChange(int luminosity, int thresh_dark, int thresh_light)
+void testPin(int pin)  // test a particular pin by making it blink
 {
-  if (luminosity <= thresh_dark)
-  {
-    return 1.0;
-  }
-  if (luminosity >= thresh_light)
-  {
-    return 0.0;
-  }
-  
-  // Linear interpolation
-  float m = - 1.0 / (thresh_light - thresh_dark);
-  return m*(luminosity - thresh_dark) + 1.0;
+  digitalWrite(pin, HIGH);
+  delay(3000);
+  digitalWrite(pin, LOW);
+  delay(1500);
+  digitalWrite(pin, HIGH);
+  delay(3000);
+  digitalWrite(pin, LOW);
+  delay(1500);
+  digitalWrite(pin, HIGH);
+  delay(3000);
+  digitalWrite(pin, LOW);
+  delay(1500);
 }
 
-int* onYearPeriod(int month)
+int* onYearPeriod(int month)  // change sunset and sunrise based on the month of the year
 {
   static int yearPeriod[4];
 
@@ -138,7 +134,31 @@ int* onYearPeriod(int month)
   return yearPeriod;
 }
 
-float onDayPeriod(DateTime now, int max_minutes, int descent, int rise_hour, int rise_minute, int set_hour, int set_minute)
+float onLightChange(int luminosity,
+                    int thresh_dark,
+                    int thresh_light)  // change the intensiyt based on the moment of the day
+{
+  if (luminosity <= thresh_dark)
+  {
+    return 1.0;
+  }
+  if (luminosity >= thresh_light)
+  {
+    return 0.0;
+  }
+  
+  // Linear interpolation
+  float m = - 1.0 / (thresh_light - thresh_dark);
+  return m*(luminosity - thresh_dark) + 1.0;
+}
+
+float onDayPeriod(DateTime now,
+                  int max_minutes,
+                  int descent,
+                  int rise_hour,
+                  int rise_minute,
+                  int set_hour,
+                  int set_minute)  // change the intensiyt based on the moment of the day
 {
   // Compute the day progress
   int now_minutes = now.hour()*60 + now.minute();
@@ -164,37 +184,8 @@ float onDayPeriod(DateTime now, int max_minutes, int descent, int rise_hour, int
   }
 }
 
-void testPin(int pin)
-{
-  digitalWrite(pin, HIGH);
-  delay(3000);
-  digitalWrite(pin, LOW);
-  delay(1500);
-  digitalWrite(pin, HIGH);
-  delay(3000);
-  digitalWrite(pin, LOW);
-  delay(1500);
-  digitalWrite(pin, HIGH);
-  delay(3000);
-  digitalWrite(pin, LOW);
-}
-
-void debounceValue(bool reading, bool &currentState, bool lastState, int &debounce)
-{
-  if (reading != lastState)  // update chrono if different
-  {
-    debounce = millis();
-  }
-  if ((millis() - debounce) > DEBOUNCING)  // if it stays long enough...
-  {
-    if (reading != currentState)  // ...accept if different
-    {
-      currentState = reading;
-    }
-  }
-}
-
-void activatePin(bool condition, int pin)
+void activateDigitalPin(bool condition,
+                        int pin)  // activate or deactivate a pin based on a condition
 {
   if (condition)  // activate, if needed
   {
@@ -205,7 +196,9 @@ void activatePin(bool condition, int pin)
   }
 }
 
-void activatePin(bool condition, int pin0, int pin1)
+void activateDigitalPin(bool condition,
+                        int pin0,
+                        int pin1)  // activate or deactivate multiple pins based on a condition
 {
   if (condition)  // activate, if needed
   {
@@ -218,7 +211,13 @@ void activatePin(bool condition, int pin0, int pin1)
   }
 }
 
-void switchConditionLogic(bool switchCondition, bool intensity, float condition, float threshold_low, float threshold_high, bool &logic)
+bool switchConditionLogic(bool switchCondition,
+                          bool intensity,
+                          float condition,
+                          float threshold_low,
+                          float threshold_high,
+                          bool logic,
+                          bool forced)  // decide the outcome of the logic based on various conditions
 {
   if (switchCondition)  // if the switch is ON...
   {
@@ -227,34 +226,15 @@ void switchConditionLogic(bool switchCondition, bool intensity, float condition,
       if (condition < threshold_low)  // ...activate if condition meets lower threshold
       {
         logic = true;
-      }
-      if (condition >= threshold_high)  // ...let it be if  if condition meets upper threshold
+      } else if ((condition >= threshold_low) && (condition < threshold_high))  // ...leave unchanged in between
+      {
+        logic = logic;
+      } else  // ...let it be if  if condition meets upper threshold
       {
         logic = false;
       }
     }
-  } else
-  {
-    logic = false;  // ...let it be otherwise
-  }
-}
-
-void switchConditionLogic(bool switchCondition, bool intensity, float condition, float threshold_low, float threshold_high, bool &logic, bool forced)
-{
-  if (switchCondition)  // if the switch is ON...
-  {
-    if (intensity > 0.0)  // ...and its daytime for the plants...
-    {
-      if (condition < threshold_low)  // ...activate if condition meets lower threshold
-      {
-        logic = true;
-      }
-      if (condition >= threshold_high)  // ...let it be if  if condition meets upper threshold
-      {
-        logic = false;
-      }
-    }
-    if (forced)  // ...activate if forced
+    if (forced)  // ...light it if a "button" is on
     {
       logic = true;
     }
@@ -262,6 +242,8 @@ void switchConditionLogic(bool switchCondition, bool intensity, float condition,
   {
     logic = false;  // ...let it be otherwise
   }
+
+  return logic;
 }
 
 #endif

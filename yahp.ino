@@ -10,16 +10,18 @@
   
   The following variables are automatically generated and updated when changes are made to the Thing
 
+  CloudSwitch lightButton;
+  CloudSwitch lighting;
+  CloudSwitch lightSwitch;
+  CloudSwitch waterButton;
+  CloudSwitch watering;
+  CloudSwitch waterSwitch;
   CloudTemperatureSensor temperature;
   CloudLuminousIntensity luminosity;
   CloudRelativeHumidity humidity;
   CloudRelativeHumidity moist_0;
   CloudRelativeHumidity moist_1;
   CloudRelativeHumidity moist_2;
-  bool lighting;
-  bool lightSwitch;
-  bool watering;
-  bool waterSwitch;
 
   Variables which are marked as READ/WRITE in the Cloud Thing will also have functions
   which are called when their values are changed from the Dashboard.
@@ -38,18 +40,18 @@ int SUNSET_MINUTE = 0;  // minute of sunset
 DHT dht(DHTPIN, DHTTYPE);  // humidity sensor
 RTC_DS3231 rtc;  // real time clock
 
-float moist_mean = 0.0;  // average moisture
+float moisture = 0.0; // actual value of the moisture
+float moistureState = 0.0;  // average moisture
+float moistureLastState = 0.0;  // last average moisture
+
+float luminosityState = 0.0;  // luminosity
+float luminosityLastState = 0.0;  // last luminosity
 
 DateTime now;  // RTC now
 int* yearPeriod;  // sunrise and set time (array - shape[4])
 float light_intensity = 0.0;  // intensity of the light entering the photorestor
 float day_intensity = 0.0;  // intensity connected to the moment of the day
 int day_minutes = 0;  // minutes of light in the day
-
-bool button = LOW;  // current state of the button
-bool buttonReading = LOW;  // current button reading
-bool buttonLastState = LOW;  // last state of the button
-int buttonDebounce = 0;  // last debouncing timer
 
 int wait = 0;  // wait interval
 
@@ -82,7 +84,7 @@ void setup() {
   Serial.print("    Initializing YAHP    \n");
   Serial.print("                         \n");
   Serial.print("    auth: thesfinox      \n");
-  Serial.print("    ver:  1.2.1          \n");
+  Serial.print("    ver:  2.0.0          \n");
   Serial.print("*************************\n\n");
 
   // Init the RTC
@@ -113,7 +115,6 @@ void setup() {
   pinMode(WATERPIN, OUTPUT);
   pinMode(LIGHTPIN_0, OUTPUT);
   pinMode(LIGHTPIN_1, OUTPUT);
-  pinMode(BUTTONPIN, INPUT);
   pinMode(MOIST_0, INPUT);
   pinMode(MOIST_1, INPUT);
   pinMode(MOIST_2, INPUT);
@@ -150,10 +151,12 @@ void setup() {
   // Init the irrigation system
   watering = false;
   waterSwitch = true;
+  waterButton = false;
 
   // Init the lights
   lighting = false;
   lightSwitch = true;
+  lightButton = false;
 
   // Run tests
   Serial.println("Launching tests...");
@@ -186,6 +189,7 @@ void loop() {
     Serial.print(" - ");
 
     day_intensity = onDayPeriod(now, day_minutes, DAY_DESCENT, SUNRISE_HOUR, SUNRISE_MINUTE, SUNSET_HOUR, SUNSET_MINUTE);
+    // day_intensity = 1.0;  // DEBUG
     Serial.print("Day int.: ");
     Serial.print(day_intensity);
 
@@ -206,9 +210,9 @@ void loop() {
 
     Serial.print(" - ");
 
-    luminosity = map(4095 - analogRead(PHOTOPIN), 0, 4095, 0, 100);
+    luminosityState = map(4095 - analogRead(PHOTOPIN), 0, 4095, 0, 100);
     Serial.print("Light: ");
-    Serial.print(luminosity);
+    Serial.print(luminosityState);
     Serial.print("%");
 
     Serial.print(" - ");
@@ -221,6 +225,7 @@ void loop() {
     moist_0 = map(4095 - analogRead(MOIST_0), 0, 4095, 0, 100);
     moist_1 = map(4095 - analogRead(MOIST_1), 0, 4095, 0, 100);
     moist_2 = map(4095 - analogRead(MOIST_2), 0, 4095, 0, 100);
+    moistureState = (moist_0 + moist_1 + moist_2) / 3.0;
     Serial.print(" Moist: ");
     Serial.print(moist_0);
     Serial.print("% ");
@@ -238,16 +243,16 @@ void loop() {
   }
 
   // Irrigation actions
-  moist_mean = (moist_0 + moist_1 + moist_2) / 3.0;
-  buttonReading = digitalRead(BUTTONPIN);
-  debounceValue(buttonReading, button, buttonLastState, buttonDebounce);  // debounce the button
-  switchConditionLogic(waterSwitch, day_intensity, moist_mean, MOIST_THRESH_DRY, MOIST_THRESH_WET, watering, button);  // decide what to do
-  activatePin(watering, WATERPIN);  // finally, activate, if needed
-  buttonLastState = buttonReading;
+  (moistureLastState > 0.0) ? moisture = (moistureState + moistureLastState) / 2.0 : moisture = moistureState;
+  watering = switchConditionLogic(waterSwitch, day_intensity, moisture, MOIST_THRESH_DRY, MOIST_THRESH_WET, watering, waterButton);  // decide what to do
+  activateDigitalPin(watering, WATERPIN);  // finally, activate, if needed
+  moistureLastState = moisture;
 
   // Lighting actions
-  switchConditionLogic(lightSwitch, day_intensity, (float)luminosity, INTENSITY_THRESHOLD_LOW, INTENSITY_THRESHOLD_HIGH, lighting);  // decide what to do
-  activatePin(lighting, LIGHTPIN_0, LIGHTPIN_1);  // finally, activate, if needed
+  (luminosityLastState > 0.0) ? luminosity = (luminosityState + luminosityLastState) / 2.0 : luminosity = luminosityState;
+  lighting = switchConditionLogic(lightSwitch, day_intensity, luminosity, INTENSITY_THRESHOLD_LOW, INTENSITY_THRESHOLD_HIGH, lighting, lightButton);  // decide what to do
+  activateDigitalPin(lighting, LIGHTPIN_0, LIGHTPIN_1);  // finally, activate, if needed
+  luminosityLastState = luminosity;
 }
 
 
@@ -255,20 +260,24 @@ void loop() {
   Since WaterSwitch is READ_WRITE variable, onWaterSwitchChange() is
   executed every time a new value is received from IoT Cloud.
 */
-void onWaterSwitchChange()
-{
-  digitalWrite(WATERPIN, !digitalRead(WATERPIN));
-  delay(3000);
-}
+void onWaterSwitchChange() {}
 
 
 /*
   Since LightSwitch is READ_WRITE variable, onLightSwitchChange() is
   executed every time a new value is received from IoT Cloud.
 */
-void onLightSwitchChange()
-{
-  digitalWrite(LIGHTPIN_0, !digitalRead(LIGHTPIN_0));
-  digitalWrite(LIGHTPIN_1, !digitalRead(LIGHTPIN_1));
-  delay(3000);
-}
+void onLightSwitchChange() {}
+
+
+/*
+  Since LightButton is READ_WRITE variable, onLightButtonChange() is
+  executed every time a new value is received from IoT Cloud.
+*/
+void onLightButtonChange()  {}
+
+/*
+  Since WaterButton is READ_WRITE variable, onWaterButtonChange() is
+  executed every time a new value is received from IoT Cloud.
+*/
+void onWaterButtonChange()  {}

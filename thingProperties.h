@@ -27,6 +27,7 @@ CloudRelativeHumidity humidity;
 CloudRelativeHumidity moist_0;
 CloudRelativeHumidity moist_1;
 CloudRelativeHumidity moist_2;
+CloudRelativeHumidity moist_3;
 CloudRelativeHumidity moisture;
 
 void initProperties(){
@@ -46,6 +47,7 @@ void initProperties(){
   ArduinoCloud.addProperty(moist_0, READ, 60 * SECONDS, NULL);
   ArduinoCloud.addProperty(moist_1, READ, 60 * SECONDS, NULL);
   ArduinoCloud.addProperty(moist_2, READ, 60 * SECONDS, NULL);
+  ArduinoCloud.addProperty(moist_3, READ, 60 * SECONDS, NULL);
   ArduinoCloud.addProperty(moisture, READ, 60 * SECONDS, NULL);
 
 }

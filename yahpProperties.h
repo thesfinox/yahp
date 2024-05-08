@@ -28,13 +28,14 @@ const int WATERPIN = 0;  // pin of the water fountain
 const int MOIST_0 = 34;  // pins of the moisture sensor
 const int MOIST_1 = 35;  // pins of the moisture sensor
 const int MOIST_2 = 39;  // pins of the moisture sensor
-const int MOIST_THRESH_DRY = 40;  // threshold for watering (%)
-const int MOIST_THRESH_WET = 50;  // threshold for watering (%)
+const int MOIST_3 = 36;  // pins of the moisture sensor
+const int MOIST_THRESH_DRY = 30;  // threshold for watering (%)
+const int MOIST_THRESH_WET = 40;  // threshold for watering (%)
 
 const int WAIT_THRESH = 10*1000;  // serial console and sensor update waiting time (ms)
 
 // Functions
-void testPin(int pin)  // test a particular pin by making it blink
+void testOutputPin(int pin)  // test a particular pin by making it blink
 {
   digitalWrite(pin, HIGH);
   delay(3000);

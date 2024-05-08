@@ -23,6 +23,7 @@
   CloudRelativeHumidity moist_0;
   CloudRelativeHumidity moist_1;
   CloudRelativeHumidity moist_2;
+  CloudRelativeHumidity moist_3;
   CloudRelativeHumidity moisture;
 
   Variables which are marked as READ/WRITE in the Cloud Thing will also have functions
@@ -117,6 +118,7 @@ void setup() {
   pinMode(MOIST_0, INPUT);
   pinMode(MOIST_1, INPUT);
   pinMode(MOIST_2, INPUT);
+  pinMode(MOIST_3, INPUT);
 
   // Initialize the DHT interface
   dht.begin();
@@ -159,9 +161,9 @@ void setup() {
 
   // Run tests
   Serial.println("Launching tests...");
-  testPin(LIGHTPIN_0);
-  testPin(LIGHTPIN_1);
-  testPin(WATERPIN);
+  testOutputPin(LIGHTPIN_0);
+  testOutputPin(LIGHTPIN_1);
+  testOutputPin(WATERPIN);
   
   delay(3000);
 }
@@ -224,13 +226,17 @@ void loop() {
     moist_0 = map(4095 - analogRead(MOIST_0), 0, 4095, 0, 100);
     moist_1 = map(4095 - analogRead(MOIST_1), 0, 4095, 0, 100);
     moist_2 = map(4095 - analogRead(MOIST_2), 0, 4095, 0, 100);
-    moistureState = (moist_0 + moist_1 + moist_2) / 3.0;
+    moist_3 = 100;
+    // moist_3 = map(4095 - analogRead(MOIST_3), 0, 4095, 0, 100);
+    moistureState = (moist_0 + moist_1 + moist_2 + moist_3) / 4.0;
     Serial.print(" Moist: ");
     Serial.print(moist_0);
     Serial.print("% ");
     Serial.print(moist_1);
     Serial.print("% ");
     Serial.print(moist_2);
+    Serial.print("% ");
+    Serial.print(moist_3);
     Serial.print("%");
 
     Serial.print(" - ");

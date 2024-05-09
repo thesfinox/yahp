@@ -1,7 +1,7 @@
 :Author: thesfinox
 :Email: riccardo.finotello@gmail.com
 :Date: 28/04/2024
-:Revision: v1.0.0
+:Revision: v2.1.0
 :License: Public Domain
 
 = Yet Another Hydroponics Project (YAHP)
@@ -43,8 +43,7 @@ image::yahp.png[YAHP]
 === License
 This project is released under a GNU General Public License v3.0.
 
-=== BOM
-Add the bill of the materials you need for this project.
+=== Bill of Material
 
 |===
 |Part name             | Quantity        

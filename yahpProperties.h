@@ -27,24 +27,21 @@ const int DAY_DESCENT = 60;  // length of light rise and fall (minutes)
 const int WATERPIN = 0;  // pin of the water fountain
 const int MOIST_0 = 34;  // pins of the moisture sensor
 const int MOIST_1 = 35;  // pins of the moisture sensor
-const int MOIST_2 = 39;  // pins of the moisture sensor
-const int MOIST_3 = 36;  // pins of the moisture sensor
+const int MOIST_2 = 36;  // pins of the moisture sensor
+const int MOIST_3 = 39;  // pins of the moisture sensor
 const int MOIST_THRESH_DRY = 30;  // threshold for watering (%)
 const int MOIST_THRESH_WET = 40;  // threshold for watering (%)
 
+const int FANPIN = 4;  // pin of the ventilation fans
+const int FAN_THRESH_DRY = 50;  // humidity threshold for fan activation (%)
+const int FAN_THRESH_WET = 75;  // humidity threshold for fan activation (%)
+
 const int WAIT_THRESH = 10*1000;  // serial console and sensor update waiting time (ms)
+int TIMER = 10*60*1000;  // cooldown timer (ms)
 
 // Functions
 void testOutputPin(int pin)  // test a particular pin by making it blink
 {
-  digitalWrite(pin, HIGH);
-  delay(3000);
-  digitalWrite(pin, LOW);
-  delay(1500);
-  digitalWrite(pin, HIGH);
-  delay(3000);
-  digitalWrite(pin, LOW);
-  delay(1500);
   digitalWrite(pin, HIGH);
   delay(3000);
   digitalWrite(pin, LOW);

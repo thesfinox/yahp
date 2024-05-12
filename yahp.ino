@@ -10,9 +10,12 @@
   
   The following variables are automatically generated and updated when changes are made to the Thing
 
+  CloudSwitch fanButton;
+  CloudSwitch fanSwitch;
   CloudSwitch lightButton;
   CloudSwitch lighting;
   CloudSwitch lightSwitch;
+  CloudSwitch ventilation;
   CloudSwitch waterButton;
   CloudSwitch watering;
   CloudSwitch waterSwitch;
@@ -43,15 +46,13 @@ int SUNSET_MINUTE = 0;  // minute of sunset
 DHT dht(DHTPIN, DHTTYPE);  // humidity sensor
 RTC_DS3231 rtc;  // real time clock
 
-float moistureState = 0.0;  // average moisture
-float moistureLastState = 0.0;  // last average moisture
-
-float luminosityState = 0.0;  // luminosity
-float luminosityLastState = 0.0;  // last luminosity
-
 DateTime now;  // RTC now
 int* yearPeriod;  // sunrise and set time (array - shape[4])
 int day_minutes = 0;  // minutes of light in the day
+
+bool wateringLast = false;  // last watering status
+unsigned long changeTime = 0;  // watering change (ms)
+unsigned long timeDelta = 0;  // (ms)
 
 int wait = 0;  // wait interval
 
@@ -115,6 +116,7 @@ void setup() {
   pinMode(WATERPIN, OUTPUT);
   pinMode(LIGHTPIN_0, OUTPUT);
   pinMode(LIGHTPIN_1, OUTPUT);
+  pinMode(FANPIN, OUTPUT);
   pinMode(MOIST_0, INPUT);
   pinMode(MOIST_1, INPUT);
   pinMode(MOIST_2, INPUT);
@@ -138,6 +140,12 @@ void setup() {
   Serial.print(now.month());
   Serial.print("/");
   Serial.print(now.year());
+  Serial.print(" ");
+  Serial.print(now.hour());
+  Serial.print(":");
+  Serial.print(now.minute());
+  Serial.print(":");
+  Serial.print(now.second());
   Serial.print("\n");
   Serial.print("Sunrise: ");
   Serial.print(SUNRISE_HOUR);
@@ -159,11 +167,17 @@ void setup() {
   lightSwitch = true;
   lightButton = false;
 
+  // Init the fans
+  ventilation = false;
+  fanSwitch = true;
+  fanButton = false;
+
   // Run tests
   Serial.println("Launching tests...");
   testOutputPin(LIGHTPIN_0);
   testOutputPin(LIGHTPIN_1);
   testOutputPin(WATERPIN);
+  testOutputPin(FANPIN);  
   
   delay(3000);
 }
@@ -211,9 +225,9 @@ void loop() {
 
     Serial.print(" - ");
 
-    luminosityState = map(4095 - analogRead(PHOTOPIN), 0, 4095, 0, 100);
+    luminosity = map(4095 - analogRead(PHOTOPIN), 0, 4095, 0, 100);
     Serial.print("Light: ");
-    Serial.print(luminosityState);
+    Serial.print(luminosity);
     Serial.print("%");
 
     Serial.print(" - ");
@@ -226,9 +240,8 @@ void loop() {
     moist_0 = map(4095 - analogRead(MOIST_0), 0, 4095, 0, 100);
     moist_1 = map(4095 - analogRead(MOIST_1), 0, 4095, 0, 100);
     moist_2 = map(4095 - analogRead(MOIST_2), 0, 4095, 0, 100);
-    moist_3 = 100;
-    // moist_3 = map(4095 - analogRead(MOIST_3), 0, 4095, 0, 100);
-    moistureState = (moist_0 + moist_1 + moist_2 + moist_3) / 4.0;
+    moist_3 = map(4095 - analogRead(MOIST_3), 0, 4095, 0, 100);
+    moisture = (moist_0 + moist_1 + moist_2 + moist_3) / 4.0;
     Serial.print(" Moist: ");
     Serial.print(moist_0);
     Serial.print("% ");
@@ -244,20 +257,47 @@ void loop() {
     Serial.print("Watering: ");
     Serial.print(watering);
 
+    Serial.print(" - ");
+    
+    Serial.print("Ventilation: ");
+    Serial.print(ventilation);
+
     Serial.print("\n");
   }
 
-  // Irrigation actions
-  (moistureLastState > 0.0) ? moisture = (moistureState + moistureLastState) / 2.0 : moisture = moistureState;
+  // Actions
   watering = switchConditionLogic(waterSwitch, day_intensity, moisture, MOIST_THRESH_DRY, MOIST_THRESH_WET, watering, waterButton);  // decide what to do
-  activateDigitalPin(watering, WATERPIN);  // finally, activate, if needed
-  moistureLastState = moisture;
-
-  // Lighting actions
-  (luminosityLastState > 0.0) ? luminosity = (luminosityState + luminosityLastState) / 2.0 : luminosity = luminosityState;
   lighting = switchConditionLogic(lightSwitch, day_intensity, luminosity, INTENSITY_THRESHOLD_LOW, INTENSITY_THRESHOLD_HIGH, lighting, lightButton);  // decide what to do
+  ventilation = switchConditionLogic(fanSwitch, 1.0, 100.0 - humidity, 100 - FAN_THRESH_WET, 100 - FAN_THRESH_DRY, ventilation, fanButton);  // decide what to do
+  if (watering)
+  {
+    ventilation = false;
+  }
+  activateDigitalPin(watering, WATERPIN);  // finally, activate, if needed
   activateDigitalPin(lighting, LIGHTPIN_0, LIGHTPIN_1);  // finally, activate, if needed
-  luminosityLastState = luminosity;
+  activateDigitalPin(ventilation, FANPIN);  // finally, activate, if needed
+
+
+  // Keep track of time
+  if (watering != wateringLast)  // if toggled...
+  {
+    changeTime = millis();  // ...record the time
+  }
+  timeDelta = millis() - changeTime;  // measure duration
+  if (watering)  // if irrrigating...
+  {
+    if (timeDelta > TIMER)  // ...and time is up...
+    {
+      waterSwitch = false;  // ...turn the switch off
+    }
+  } else  // if it is not irrigating...
+  {
+    if (!waterSwitch && (timeDelta > TIMER))  // ...and the switch is off, and time is up...
+    {
+      waterSwitch = true;  // ...turn the switch on
+    }
+  }
+  wateringLast = watering;
 }
 
 
@@ -267,13 +307,11 @@ void loop() {
 */
 void onWaterSwitchChange() {}
 
-
 /*
   Since LightSwitch is READ_WRITE variable, onLightSwitchChange() is
   executed every time a new value is received from IoT Cloud.
 */
 void onLightSwitchChange() {}
-
 
 /*
   Since LightButton is READ_WRITE variable, onLightButtonChange() is
@@ -286,3 +324,21 @@ void onLightButtonChange()  {}
   executed every time a new value is received from IoT Cloud.
 */
 void onWaterButtonChange()  {}
+
+/*
+  Since FanSwitch is READ_WRITE variable, onFanSwitchChange() is
+  executed every time a new value is received from IoT Cloud.
+*/
+void onFanSwitchChange()  {}
+
+/*
+  Since FanButton is READ_WRITE variable, onFanButtonChange() is
+  executed every time a new value is received from IoT Cloud.
+*/
+void onFanButtonChange()  {}
+
+/*
+  Since Ventilation is READ_WRITE variable, onVentilationChange() is
+  executed every time a new value is received from IoT Cloud.
+*/
+void onVentilationChange()  {}

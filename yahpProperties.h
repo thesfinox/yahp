@@ -13,27 +13,30 @@ Constants and functions signatures.
 
 
 // Constants
-const int DHTPIN = 33;  // humidity sensor data pin
+const int DHTPIN = 17;  // humidity sensor data pin
 const int DHTTYPE = DHT22;  // type of humidity sensor
+const int NEBULIZERPIN = 0;  // pin of the water fountain
+const int HUMIDITY_THRESH_DRY = 50;  // threshold for nebulizer (%)
+const int HUMIDITY_THRESH_WET = 75;  // threshold for nebulizer (%)
 
 const int PHOTOPIN = 32;  // photoresistor pin
 
-const int LIGHTPIN_0 = 16;  // light switch
-const int LIGHTPIN_1 = 27;  // light switch
+const int LIGHTPIN_0 = 18;  // light switch
+const int LIGHTPIN_1 = 19;  // light switch
 const float INTENSITY_THRESHOLD_LOW = 7;  // overall intensity threshold for lights
 const float INTENSITY_THRESHOLD_HIGH = 40;  // overall intensity threshold for lights
 const int DAY_DESCENT = 60;  // length of light rise and fall (minutes)
 
-const int WATERPIN = 0;  // pin of the water fountain
+const int WATERPIN = 16;  // pin of the water fountain
 const int MOIST_0 = 34;  // pins of the moisture sensor
 const int MOIST_1 = 35;  // pins of the moisture sensor
 const int MOIST_2 = 36;  // pins of the moisture sensor
 const int MOIST_3 = 39;  // pins of the moisture sensor
-const int MOIST_THRESH_DRY = 30;  // threshold for watering (%)
-const int MOIST_THRESH_WET = 40;  // threshold for watering (%)
+const int MOIST_THRESH_DRY = 40;  // threshold for watering (%)
+const int MOIST_THRESH_WET = 60;  // threshold for watering (%)
 
 const int FANPIN = 4;  // pin of the ventilation fans
-const int FAN_THRESH_DRY = 50;  // humidity threshold for fan activation (%)
+const int FAN_THRESH_DRY = 45;  // humidity threshold for fan activation (%)
 const int FAN_THRESH_WET = 75;  // humidity threshold for fan activation (%)
 
 const int WAIT_THRESH = 10*1000;  // serial console and sensor update waiting time (ms)
@@ -179,6 +182,13 @@ float onDayPeriod(DateTime now,
   {
     return 100.0 * (1.0 - (diff_minutes - (day_duration - descent)) / (float)descent);
   }
+}
+
+float calibrate(float value, float low, float high)  // recalibrate values between 0 and 100
+{
+  if (value < low) {return 0.0;}
+  if (value >= high) {return 100.0;}
+  return 100.0 * (value - low) / (high - low);
 }
 
 void activateDigitalPin(bool condition,

@@ -18,6 +18,7 @@ void onNebulizerSwitchChange();
 void onVentilationChange();
 void onWaterButtonChange();
 void onWaterSwitchChange();
+void onOnSchedulerChange();
 
 CloudSwitch fanButton;
 CloudSwitch fanSwitch;
@@ -40,6 +41,7 @@ CloudRelativeHumidity moist_1;
 CloudRelativeHumidity moist_2;
 CloudRelativeHumidity moist_3;
 CloudRelativeHumidity moisture;
+CloudSchedule onScheduler;
 
 void initProperties(){
 
@@ -66,6 +68,7 @@ void initProperties(){
   ArduinoCloud.addProperty(moist_2, READ, 60 * SECONDS, NULL);
   ArduinoCloud.addProperty(moist_3, READ, 60 * SECONDS, NULL);
   ArduinoCloud.addProperty(moisture, READ, 60 * SECONDS, NULL);
+  ArduinoCloud.addProperty(onScheduler, READWRITE, ON_CHANGE, onOnSchedulerChange);
 
 }
 

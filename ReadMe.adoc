@@ -1,7 +1,7 @@
 :Author: thesfinox
 :Email: riccardo.finotello@gmail.com
 :Date: 28/04/2024
-:Revision: v2.1.0
+:Revision: v3.0.0
 :License: Public Domain
 
 = Yet Another Hydroponics Project (YAHP)

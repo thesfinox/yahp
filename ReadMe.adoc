@@ -2,7 +2,7 @@
 :Email: riccardo.finotello@gmail.com
 :Date: 28/04/2024
 :Revision: v3.0.0
-:License: Public Domain
+:License: GNU General Public License v3.0
 
 = Yet Another Hydroponics Project (YAHP)
 

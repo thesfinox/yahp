@@ -31,6 +31,7 @@
   CloudRelativeHumidity moist_2;
   CloudRelativeHumidity moist_3;
   CloudRelativeHumidity moisture;
+  CloudSchedule onScheduler;
 
   Variables which are marked as READ/WRITE in the Cloud Thing will also have functions
   which are called when their values are changed from the Dashboard.
@@ -274,12 +275,21 @@ void loop() {
   }
 
   // Actions
-  watering = switchConditionLogic(waterSwitch, day_intensity, moisture, MOIST_THRESH_DRY, MOIST_THRESH_WET, watering, waterButton);  // decide what to do
-  nebulizing = switchConditionLogic(nebulizerSwitch, day_intensity, humidity, HUMIDITY_THRESH_DRY, HUMIDITY_THRESH_WET, nebulizing, nebulizerButton);  // decide what to do
-  lighting = switchConditionLogic(lightSwitch, day_intensity, luminosity, INTENSITY_THRESHOLD_LOW, INTENSITY_THRESHOLD_HIGH, lighting, lightButton);  // decide what to do
-  ventilation = switchConditionLogic(fanSwitch, 1.0, 100.0 - humidity, 100 - FAN_THRESH_WET, 100 - FAN_THRESH_DRY, ventilation, fanButton);  // decide what to do
-  if (nebulizing)
+  if (onScheduler.isActive())
   {
+    watering = switchConditionLogic(waterSwitch, day_intensity, moisture, MOIST_THRESH_DRY, MOIST_THRESH_WET, watering, waterButton);  // decide what to do
+    nebulizing = switchConditionLogic(nebulizerSwitch, day_intensity, humidity, HUMIDITY_THRESH_DRY, HUMIDITY_THRESH_WET, nebulizing, nebulizerButton);  // decide what to do
+    lighting = switchConditionLogic(lightSwitch, day_intensity, luminosity, INTENSITY_THRESHOLD_LOW, INTENSITY_THRESHOLD_HIGH, lighting, lightButton);  // decide what to do
+    ventilation = switchConditionLogic(fanSwitch, 1.0, 100.0 - humidity, 100 - FAN_THRESH_WET, 100 - FAN_THRESH_DRY, ventilation, fanButton);  // decide what to do
+    if (nebulizing)
+    {
+      ventilation = false;
+    }
+  } else
+  {
+    watering = false;
+    nebulizing = false;
+    lighting = false;
     ventilation = false;
   }
   activateDigitalPin(watering, WATERPIN);  // finally, activate, if needed
@@ -348,3 +358,11 @@ void onNebulizerSwitchChange()  {}
   executed every time a new value is received from IoT Cloud.
 */
 void onNebulizerButtonChange()  {}
+
+/*
+  Since OnScheduler is READ_WRITE variable, onOnSchedulerChange() is
+  executed every time a new value is received from IoT Cloud.
+*/
+void onOnSchedulerChange()  {
+  // Add your code here to act upon OnScheduler change
+}

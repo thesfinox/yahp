@@ -52,12 +52,9 @@ This project is released under a GNU General Public License v3.0.
 |Photoresistor         | 1
 |Button (6 mm)         | 1
 |DHT22                 | 1
-|Atomisers             | 3
-|Soil moisture sensors | 3
-|220 Ohm resistor      | 3
-|10k Ohm resistor      | 3
-|100k Ohm resistor     | 1
-|Relay (3.3 V)         | 3
+|Atomisers             | 2
+|Soil moisture sensors | 4
+|Relay (3.3 V)         | 4
 |DC-DC converter       | 3
 |3W 465 nm LED         | 4
 |3W 630 nm LED         | 4

@@ -16,8 +16,8 @@ Constants and functions signatures.
 const int DHTPIN = 17;  // humidity sensor data pin
 const int DHTTYPE = DHT22;  // type of humidity sensor
 const int NEBULIZERPIN = 0;  // pin of the water fountain
-const int HUMIDITY_THRESH_DRY = 50;  // threshold for nebulizer (%)
-const int HUMIDITY_THRESH_WET = 75;  // threshold for nebulizer (%)
+const int HUMIDITY_THRESH_DRY = 60;  // threshold for nebulizer (%)
+const int HUMIDITY_THRESH_WET = 90;  // threshold for nebulizer (%)
 
 const int PHOTOPIN = 32;  // photoresistor pin
 

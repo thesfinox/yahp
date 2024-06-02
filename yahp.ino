@@ -99,7 +99,7 @@ void setup() {
     Serial.println("Error: RTC lost power, setting time...");
     // When time needs to be set on a new device, or after a power loss, the
     // following line sets the RTC to the date & time this sketch was compiled
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     // This line sets the RTC with an explicit date & time, for example to set
     // January 21, 2014 at 3am you would call:
     // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
@@ -249,7 +249,7 @@ void loop() {
     moist_2 = map(4095 - analogRead(MOIST_2), 0, 4095, 0, 100);
     moist_2 = calibrate(moist_2, 17, 58);
     moist_3 = map(4095 - analogRead(MOIST_3), 0, 4095, 0, 100);
-    moist_3 = calibrate(moist_3, 40, 77);
+    moist_3 = calibrate(moist_3, 37, 85);
     moisture = (moist_0 + moist_1 + moist_2 + moist_3) / 4.0;
     Serial.print(moist_0);
     Serial.print(",");
@@ -366,3 +366,4 @@ void onNebulizerButtonChange()  {}
 void onOnSchedulerChange()  {
   // Add your code here to act upon OnScheduler change
 }
+
